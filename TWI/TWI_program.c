@@ -10,6 +10,7 @@
 #include "TWI_interface.h"
 
 /* Private State Variables for the ISR */
+static volatile bool TWI_boolTransactionSuccess = false;
 static u8 *TWI_pDataBuffer;    // Pointer to the user's data array
 static u8 TWI_u8DataSize;      // Total bytes to send/receive
 static u8 TWI_u8DataCounter;   // Current byte index
@@ -141,10 +142,13 @@ bool TWI_bIsBusy(void) {
     return TWI_boolIsBusy;
 }
 
+u8 TWI_u8GetTransactionStatus(void) {
+    return TWI_boolTransactionSuccess;
+}
+
 void TWI_vIntHandler(void)
 {
     u8 status = TWSR & 0xF8;
-
     switch (status)
     {
     /* ************************************************** */
@@ -152,11 +156,13 @@ void TWI_vIntHandler(void)
     /* ************************************************** */
     case 0x08: /* START TRANSMITTED */
     case 0x10: /* REPEATED START TRANSMITTED */
+        TWI_boolTransactionSuccess = true;
         TWI_vSendSlaveCall(TWI_u8SlaveAddress, TWI_boolDirection);
         break;
 
     case 0x18: /* SLA+W TRANSMITTED, ACK RECEIVED */
     case 0x28: /* DATA BYTE TRANSMITTED, ACK RECEIVED */
+        TWI_boolTransactionSuccess = true;
         if (TWI_u8DataCounter < TWI_u8DataSize)
         {
             TWI_vSendDataByte(TWI_pDataBuffer[TWI_u8DataCounter]);
@@ -173,6 +179,7 @@ void TWI_vIntHandler(void)
     /*             MASTER RECEIVER STATES                 */
     /* ************************************************** */
     case 0x40: /* SLA+R TRANSMITTED, ACK RECEIVED */
+        TWI_boolTransactionSuccess = true;
         if (TWI_u8DataSize == 1)
         {
             TWI_vAcknowledgeOwnAddress(TWI_ACKNOWLEDGE_DISABLE);
@@ -185,6 +192,7 @@ void TWI_vIntHandler(void)
         break;
 
     case 0x50: /* DATA BYTE RECEIVED, ACK RETURNED */
+        TWI_boolTransactionSuccess = true;
         TWI_pDataBuffer[TWI_u8DataCounter] = TWI_u8ReadDataByte();
         TWI_u8DataCounter++;
 
@@ -201,7 +209,8 @@ void TWI_vIntHandler(void)
             }
             TWCR = (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
         }
-
+        break;
+        
         /* ************************************************** */
         /*             ERROR / ARBITRATION STATES             */
         /* ************************************************** */
@@ -210,6 +219,7 @@ void TWI_vIntHandler(void)
         case 0x20: // SLA+W transmitted, NACK received
         case 0x30: // Data byte transmitted, NACK received
             // An error occurred. Abort and send STOP condition.
+            TWI_boolTransactionSuccess = false;
             TWI_vEndTransmission();
             TWI_boolIsBusy = false;
             break;
