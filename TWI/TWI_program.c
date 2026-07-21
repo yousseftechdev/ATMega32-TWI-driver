@@ -41,6 +41,8 @@ void TWI_vInit(u32 u32Freq, bool boolInterruptEnable)
 
 void TWI_vSetFrequency(u32 u32Freq)
 {
+    TWI_vWriteBitRateRegister(19);
+    TWI_vWritePrescaler(TWI_PRESCALER_1);
 }
 
 void TWI_vSetOwnSlaveAddress(u8 u8Address, bool boolGeneralCall)
@@ -210,7 +212,7 @@ void TWI_vIntHandler(void)
             TWCR = (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
         }
         break;
-        
+
         /* ************************************************** */
         /*             ERROR / ARBITRATION STATES             */
         /* ************************************************** */

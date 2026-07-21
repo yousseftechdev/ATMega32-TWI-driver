@@ -34,7 +34,7 @@ int main(void) {
     UART_voidInit(UART_BAUD_9600, UART_PARITY_NONE, UART_STOP_ONE);
     
     // 2. Initialize TWI at 100kHz, with interrupts enabled
-    TWI_vInit(100000, TWI_ENABLE_INTERRUPT);
+    TWI_vInit(400000, TWI_ENABLE_INTERRUPT);
     
     // 3. Enable global interrupts so the TWI ISR can run
     sei();
