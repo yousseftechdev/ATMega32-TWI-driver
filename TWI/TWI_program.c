@@ -7,6 +7,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdbool.h>
+#include <math.h>
 #include "TWI_interface.h"
 
 /* Private State Variables for the ISR */
