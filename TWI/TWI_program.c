@@ -40,6 +40,7 @@ void TWI_vInit(u32 u32Freq, bool boolInterruptEnable)
     }
 }
 
+/* TODO: OPTIMIZE THIS TRASH */
 void TWI_vSetFrequency(u32 u32Freq)
 {
     u32 u32Temp;
