@@ -7,7 +7,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdbool.h>
-#include <math.h>
+#include <stdint.h>
+#include <limits.h>
 #include "TWI_interface.h"
 
 /* Private State Variables for the ISR */
@@ -29,7 +30,10 @@ ISR(TWI_vect)
 void TWI_vInit(u32 u32Freq, bool boolInterruptEnable)
 {
     /* Set frequency */
-    TWI_vSetFrequency(u32Freq);
+    if (u32Freq != TWI_NO_AUTO_FREQUENCY)
+    {
+        TWI_vSetFrequency(u32Freq);
+    }
 
     /* Enable TWI peripheral */
     TWCR = (1 << TWEN);
@@ -41,22 +45,49 @@ void TWI_vInit(u32 u32Freq, bool boolInterruptEnable)
     }
 }
 
-/* TODO: OPTIMIZE THIS TRASH */
 void TWI_vSetFrequency(u32 u32Freq)
 {
-    u32 u32Temp;
-    for (u8 u8Prescaler = 0; u8Prescaler <= 3; u8Prescaler++)
+    u32 u32BestError = UINT32_MAX;
+    u8 u8BestBr = 0;
+    u8 u8BestPs = 0;
+    u8 u8PsValue = 0;
+    u32 u32Denominator = 0;
+    u32 u32CalculatedFrequency = 0;
+    u32 u32Error = 0;
+
+    for (u8 u8Ps = 0; u8Ps <= 3; u8Ps++)
     {
+        u8PsValue = 1UL << (2 * u8Ps); /* <-- Equals 4^TWPS */
+
         for (u8 u8Br = 0; u8Br <= 255; u8Br++)
         {
-            u32Temp = F_CPU / (16 + 2*u8Br * pow(4, u8Prescaler));
-            if (u32Temp == u32Freq) {
-                TWI_vWriteBitRateRegister(u8Br);
-                TWI_vWritePrescaler(u8Prescaler);
-                return;
+            u32Denominator = 16UL + (2UL * u8Br * u8PsValue);
+
+            if (u32Denominator == 0)
+                continue;
+
+            u32CalculatedFrequency = F_CPU / u32Denominator;
+
+            u32Error = (u32CalculatedFrequency > u32Freq) ? (u32CalculatedFrequency - u32Freq) : (u32Freq - u32CalculatedFrequency);
+
+            if (u32Error < u32BestError)
+            {
+                u32BestError = u32Error;
+                u8BestBr = u8Br;
+                u8BestPs = u8Ps;
+
+                /* If exact match stop looking */
+                if (u32Error == 0)
+                    break;
             }
         }
+
+        if (u32BestError == 0)
+            break;
     }
+
+    TWI_vWriteBitRateRegister(u8BestBr);
+    TWI_vWritePrescaler(u8BestPs);
 }
 
 void TWI_vSetOwnSlaveAddress(u8 u8Address, bool boolGeneralCall)
