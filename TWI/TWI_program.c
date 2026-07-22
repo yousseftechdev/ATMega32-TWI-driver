@@ -42,8 +42,19 @@ void TWI_vInit(u32 u32Freq, bool boolInterruptEnable)
 
 void TWI_vSetFrequency(u32 u32Freq)
 {
-    TWI_vWriteBitRateRegister(19);
-    TWI_vWritePrescaler(TWI_PRESCALER_1);
+    u32 u32Temp;
+    for (u8 u8Prescaler = 0; u8Prescaler <= 3; u8Prescaler++)
+    {
+        for (u8 u8Br = 0; u8Br <= 255; u8Br++)
+        {
+            u32Temp = F_CPU / (16 + 2*u8Br * pow(4, u8Prescaler));
+            if (u32Temp == u32Freq) {
+                TWI_vWriteBitRateRegister(u8Br);
+                TWI_vWritePrescaler(u8Prescaler);
+                return;
+            }
+        }
+    }
 }
 
 void TWI_vSetOwnSlaveAddress(u8 u8Address, bool boolGeneralCall)
@@ -88,32 +99,36 @@ void TWI_vStartTransmission(void)
     TWCR = (1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
 }
 
-bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size) {
-    if (TWI_boolIsBusy) return false;
+bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size)
+{
+    if (TWI_boolIsBusy)
+        return false;
 
     /* Flag and var setup */
     TWI_u8SlaveAddress = u8Address;
-    TWI_boolDirection  = TWI_WRITE; /* WRITE MODE */
-    TWI_pDataBuffer    = pData;
-    TWI_u8DataSize     = u8Size;
-    TWI_u8DataCounter  = 0;
-    TWI_boolIsBusy     = true;
+    TWI_boolDirection = TWI_WRITE; /* WRITE MODE */
+    TWI_pDataBuffer = pData;
+    TWI_u8DataSize = u8Size;
+    TWI_u8DataCounter = 0;
+    TWI_boolIsBusy = true;
 
     /* Send start bit to start transmitting */
     TWI_vStartTransmission();
     return true;
 }
 
-bool TWI_bReadData(u8 u8Address, u8 *pData, u8 u8Size) {
-    if (TWI_boolIsBusy) return false;
+bool TWI_bReadData(u8 u8Address, u8 *pData, u8 u8Size)
+{
+    if (TWI_boolIsBusy)
+        return false;
 
     /* Flag and var setup */
     TWI_u8SlaveAddress = u8Address;
-    TWI_boolDirection  = TWI_READ; /* READ MODE */
-    TWI_pDataBuffer    = pData;
-    TWI_u8DataSize     = u8Size;
-    TWI_u8DataCounter  = 0;
-    TWI_boolIsBusy     = true;
+    TWI_boolDirection = TWI_READ; /* READ MODE */
+    TWI_pDataBuffer = pData;
+    TWI_u8DataSize = u8Size;
+    TWI_u8DataCounter = 0;
+    TWI_boolIsBusy = true;
 
     /* Send start bit to start transmitting */
     TWI_vStartTransmission();
@@ -142,11 +157,13 @@ u8 TWI_u8ReadDataByte(void)
     return TWDR;
 }
 
-bool TWI_bIsBusy(void) {
+bool TWI_bIsBusy(void)
+{
     return TWI_boolIsBusy;
 }
 
-bool TWI_boolGetTransactionStatus(void) {
+bool TWI_boolGetTransactionStatus(void)
+{
     return TWI_boolTransactionSuccess;
 }
 
@@ -191,7 +208,7 @@ void TWI_vIntHandler(void)
         {
             TWI_vAcknowledgeOwnAddress(TWI_ACKNOWLEDGE_ENABLE);
         }
-        TWCR =  (TWI_boolInterruptEnable ? (1 << TWIE) : 0) | (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
+        TWCR = (TWI_boolInterruptEnable ? (1 << TWIE) : 0) | (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
         break;
 
     case 0x50: /* DATA BYTE RECEIVED, ACK RETURNED */
@@ -210,26 +227,26 @@ void TWI_vIntHandler(void)
             {
                 TWI_vAcknowledgeOwnAddress(TWI_ACKNOWLEDGE_DISABLE);
             }
-            TWCR =  (TWI_boolInterruptEnable ? (1 << TWIE) : 0) | (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
+            TWCR = (TWI_boolInterruptEnable ? (1 << TWIE) : 0) | (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
         }
         break;
 
-        /* ************************************************** */
-        /*             ERROR / ARBITRATION STATES             */
-        /* ************************************************** */
-        case 0x38: // Arbitration lost
-        case 0x48: // SLA+R/W transmitted, NACK received (Slave not responding)
-        case 0x20: // SLA+W transmitted, NACK received
-        case 0x30: // Data byte transmitted, NACK received
-            // An error occurred. Abort and send STOP condition.
-            TWI_boolTransactionSuccess = false;
-            TWI_vEndTransmission();
-            TWI_boolIsBusy = false;
-            break;
+    /* ************************************************** */
+    /*             ERROR / ARBITRATION STATES             */
+    /* ************************************************** */
+    case 0x38: // Arbitration lost
+    case 0x48: // SLA+R/W transmitted, NACK received (Slave not responding)
+    case 0x20: // SLA+W transmitted, NACK received
+    case 0x30: // Data byte transmitted, NACK received
+        // An error occurred. Abort and send STOP condition.
+        TWI_boolTransactionSuccess = false;
+        TWI_vEndTransmission();
+        TWI_boolIsBusy = false;
+        break;
 
-        default:
-            // Unknown state. Just clear the flag to prevent hanging.
-            TWCR = (1 << TWINT) | (1 << TWEN)  | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
-            break;
+    default:
+        // Unknown state. Just clear the flag to prevent hanging.
+        TWCR = (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
+        break;
     }
 }
