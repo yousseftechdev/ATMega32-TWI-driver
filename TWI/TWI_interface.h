@@ -145,7 +145,7 @@ bool TWI_bIsBusy(void);
  * @brief Returns the status code of the last completed transaction.
  * @return TWSR status code (e.g., 0x18 for ACK, 0x20 for NACK)
  */
-u8 TWI_u8GetTransactionStatus(void);
+bool TWI_boolGetTransactionStatus(void);
 
 /**
  * @brief Runs on TWINT ISR trigger, handles all TWI events, checks TWSR status register to decide next action.

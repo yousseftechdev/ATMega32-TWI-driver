@@ -10,13 +10,14 @@
 #include "TWI_interface.h"
 
 /* Private State Variables for the ISR */
-static volatile bool TWI_boolTransactionSuccess = false;
-static u8 *TWI_pDataBuffer;    // Pointer to the user's data array
-static u8 TWI_u8DataSize;      // Total bytes to send/receive
-static u8 TWI_u8DataCounter;   // Current byte index
-static u8 TWI_u8SlaveAddress;  // Target slave address
-static bool TWI_boolDirection; // true = Read, false = Write
-static bool TWI_boolIsBusy;    // Flag to prevent overlapping transactions
+static volatile bool TWI_boolTransactionSuccess = false; /* true = tranaction successful, false = failed */
+static volatile bool TWI_boolInterruptEnable = false;    /* true = Enable Interrupts, false = Disable Interrups */
+static volatile u8 *TWI_pDataBuffer;                     /* Pointer to the user's data array */
+static volatile u8 TWI_u8DataSize;                       /* Total bytes to send/receive */
+static volatile u8 TWI_u8DataCounter;                    /* Current byte index */
+static volatile u8 TWI_u8SlaveAddress;                   /* Target slave address */
+static volatile bool TWI_boolDirection;                  /* true = Read, false = Write */
+static volatile bool TWI_boolIsBusy;                     /* Flag to prevent overlapping transactions */
 
 /* Set interrupt handler */
 ISR(TWI_vect)
@@ -30,7 +31,7 @@ void TWI_vInit(u32 u32Freq, bool boolInterruptEnable)
     TWI_vSetFrequency(u32Freq);
 
     /* Enable TWI peripheral */
-    TWCR |= (1 << TWEN);
+    TWCR = (1 << TWEN);
 
     /* Check if user wants to enable interrupts */
     if (boolInterruptEnable)
@@ -61,6 +62,7 @@ void TWI_vAcknowledgeOwnAddress(bool boolAcknowledgeEnable)
 void TWI_vEnableInterrupt(void)
 {
     /* Set TWIE bit to enable TWI interrupts */
+    TWI_boolInterruptEnable = true;
     TWCR |= (1 << TWIE);
 }
 
@@ -83,7 +85,7 @@ void TWI_vWritePrescaler(u8 u8Prescaler)
 
 void TWI_vStartTransmission(void)
 {
-    TWCR = (1 << TWSTA) | (1 << TWINT) | (1 << TWEN);
+    TWCR = (1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
 }
 
 bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size) {
@@ -120,19 +122,19 @@ bool TWI_bReadData(u8 u8Address, u8 *pData, u8 u8Size) {
 
 void TWI_vEndTransmission(void)
 {
-    TWCR = (1 << TWSTO) | (1 << TWINT) | (1 << TWEN);
+    TWCR = (1 << TWSTO) | (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
 }
 
 void TWI_vSendSlaveCall(u8 u8Address, bool boolDirectionBit)
 {
     TWDR = (u8Address << 1) | boolDirectionBit;
-    TWCR = (1 << TWINT) | (1 << TWEN);
+    TWCR = (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
 }
 
 void TWI_vSendDataByte(u8 u8DataByte)
 {
     TWDR = u8DataByte;
-    TWCR = (1 << TWINT) | (1 << TWEN);
+    TWCR = (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
 }
 
 u8 TWI_u8ReadDataByte(void)
@@ -144,7 +146,7 @@ bool TWI_bIsBusy(void) {
     return TWI_boolIsBusy;
 }
 
-u8 TWI_u8GetTransactionStatus(void) {
+bool TWI_boolGetTransactionStatus(void) {
     return TWI_boolTransactionSuccess;
 }
 
@@ -158,7 +160,6 @@ void TWI_vIntHandler(void)
     /* ************************************************** */
     case 0x08: /* START TRANSMITTED */
     case 0x10: /* REPEATED START TRANSMITTED */
-        TWI_boolTransactionSuccess = true;
         TWI_vSendSlaveCall(TWI_u8SlaveAddress, TWI_boolDirection);
         break;
 
@@ -190,7 +191,7 @@ void TWI_vIntHandler(void)
         {
             TWI_vAcknowledgeOwnAddress(TWI_ACKNOWLEDGE_ENABLE);
         }
-        TWCR = (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
+        TWCR =  (TWI_boolInterruptEnable ? (1 << TWIE) : 0) | (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
         break;
 
     case 0x50: /* DATA BYTE RECEIVED, ACK RETURNED */
@@ -209,7 +210,7 @@ void TWI_vIntHandler(void)
             {
                 TWI_vAcknowledgeOwnAddress(TWI_ACKNOWLEDGE_DISABLE);
             }
-            TWCR = (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
+            TWCR =  (TWI_boolInterruptEnable ? (1 << TWIE) : 0) | (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
         }
         break;
 
@@ -228,7 +229,7 @@ void TWI_vIntHandler(void)
 
         default:
             // Unknown state. Just clear the flag to prevent hanging.
-            TWCR = (1 << TWINT) | (1 << TWEN);
+            TWCR = (1 << TWINT) | (1 << TWEN)  | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
             break;
     }
 }
