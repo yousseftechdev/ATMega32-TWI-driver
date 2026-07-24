@@ -222,6 +222,9 @@ The scanner sends its output through UART at 9600 baud:
 
 The address is printed in decimal by `LOGGER_voidPrintNumber()`. For example, decimal `60` is hexadecimal `0x3C`. The exact output depends on which devices are connected to the bus.
 
+Here's a video of it working in real life! (Sorry the video is in Arabic cause I was recording it for an Arabic audience)
+<video src="https://github.com/yousseftechdev/ATMega32-TWI-driver/raw/refs/heads/main/Screenshots/BusScannerShowcase.mp4" width="100%" controls autoplay loop></video>
+
 ## Building and flashing
 
 The repository does not currently include a Makefile or flashing script. In an AVR project, compile the application together with the TWI source and the UART/logger sources, select the ATmega32 device, and define the CPU clock as 16 MHz.
