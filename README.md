@@ -2,12 +2,33 @@
 
 This is a custom TWI / I<sup>2</sup>C driver written in C for the ATMega32 AVR microcontroller from Atmel/Microchip.
 
+## Content
+- [What is this?](#what-is-this)
+- [The Challenge](#the-challenge)
+- [Features](#features)
+- [Hardware requirements](#hardware-requirements)
+- [Software requirements](#software-requirements)
+- [Project layout](#project-layout)
+- [How it works](#how-it-works)
+    - [Step 1: Include the driver](#step-1-include-the-driver)
+    - [Step 2: Initialize it](#step-2-initialize-it)
+    - [Step 3: Start a transmission](#step-3-start-a-transmission)
+    - [Reading data](#reading-data)
+- [Manual event-handling mode](#manual-event-handling-mode)
+- [Example application: I2C bus scanner](#example-application-i2c-bus-scanner)
+- [Building and flashing](#building-and-flashing)
+- [API overview](#api-overview)
+- [Current limitations](#current-limitations)
+- [The datasheet](#the-datasheet)
+
 ## What is this?
 A custom I<sup>2</sup>C driver for the TWI interface on the ATMega32. It is a HAL, or Hardware Abstraction Layer: it allows the developer to focus on developing actual features rather than worrying about the underlying hardware changes and operations. It provides a set of functions that perform those operations behind the scenes and simplifies development for people who do not want to implement the complete TWI state machine themselves.
 
 The driver currently provides master-mode data transmission and reception. It can process transactions using TWI interrupts, or the application can call the event handler manually when interrupts are disabled.
 
 If you need help with how any of the functions work, they are documented in [TWI_interface.h](TWI/TWI_interface.h).
+
+![Bus scanner example](Screenshots/Bus-scanner.png)
 
 ## The Challenge
 Why did I even make this? Well I've been recently moving from dev boards to bare metal microcontrollers, I have been using an ATMega32A for the past few weeks and having lots of fun with it. After a few weeks I realized how dependent I am on google and AI tools to write C for me because it's kinda difficult with bare metal, and I felt like it was inhibiting my problem solving skills, cause why use your brain when you can use AI, right? So I wanted to train myself a little by writing code on my own, I wanted to work with OLED displays so I thought, why not make an I<sup>2</sup>C driver for fun, but only using information found in the [datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/doc2503.pdf) of the ATMega32, no AI, no Google, no Reddit, and certainly no StackOverflow. I didn't think I'd get this far but apparently I underestimated myself.
@@ -233,12 +254,9 @@ There's already a prebuilt .hex file in /build so you can test out the bus scann
 See [TWI_interface.h](TWI/TWI_interface.h) for the complete public API and parameter descriptions.
 
 ## Current limitations
-
-- The requested frequency is not calculated yet; the current bit-rate settings assume a 16 MHz CPU clock and 400 kHz TWI operation.
 - The public transaction status function exposes only a Boolean success value, not the detailed TWI status code.
 - The driver is designed around one active transaction and does not queue requests.
 - The application must keep transaction buffers valid until the transaction finishes because the driver stores a pointer to the caller's buffer.
-- The example scanner depends on the separate UART and logger code under `UART-for-example-script`.
 - The driver does not configure TWI pull-up resistors; they must be provided by the hardware.
 
 ## The datasheet

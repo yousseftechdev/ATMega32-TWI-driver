@@ -1,9 +1,7 @@
 # Chnages:
-- Finished bus scanner example
-- Fixed interrupt enable reset bug (TWIE was being reset by every eevent)
-- Fixed flags being optimized away by compiler at the start of program
-- Fixed broken bus scanner example
-- Added README
-- Added UART driver as a dependency of the example code
-- Added prebuilt hex file for a quick test
-- Changed `TWI_u8GetTransactionStatus` to `TWI_boolGetTransactionStatus` and it returns `bool` now
+- Swapped the bus scanner example for an OLED display fill screen test
+- Removed redundant dependenceies (UART driver)
+- Removed build folder but kept compiled examples in `Example Binaries` folder
+- Added AI Usage Declaration to README
+- Added screenshots and videos to README
+- Updated README to reflect the change in frequency calculation algorithm
