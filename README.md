@@ -268,3 +268,6 @@ See [TWI_interface.h](TWI/TWI_interface.h) for the complete public API and param
 The driver was written by following the ATmega32 datasheet, especially the TWI status-code table and register descriptions:
 
 [ATmega32 datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/doc2503.pdf)
+
+## AI Usage Declaration
+Qwen AI was used to help with the new OLED script
