@@ -46,7 +46,6 @@ Why did I even make this? Well I've been recently moving from dev boards to bare
 - An example application that scans the I<sup>2</sup>C bus and reports detected devices over UART.
 
 ### Planned features
-- Automatic bit-rate register calculation
 - Better manual mode
 - Slave transmitter and slave receiver modes
 - Better status reports
