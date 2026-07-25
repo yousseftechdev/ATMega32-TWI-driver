@@ -124,7 +124,7 @@ u8 TWI_u8ReadDataByte(void);
  * @param u8Size    Number of bytes to send
  * @return true if busy, false if idle
  */
-bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size);
+bool TWI_bSendData(u8 u8Address, u8 *pData);
 
 /**
  * @brief           Actually kicks off the transmission and sets all the necessary flags at the beginning and puts the slave in read mode.
@@ -133,7 +133,7 @@ bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size);
  * @param u8Size    Number of bytes to send
  * @return true if busy, false if idle
  */
- bool TWI_bReadData(u8 u8Address, u8 *pData, u8 u8Size);
+ bool TWI_bReadData(u8 u8Address, u8 *pData);
 
 /**
  * @brief Checks if the I2C bus is currently processing a transaction.

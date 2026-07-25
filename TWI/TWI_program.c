@@ -132,7 +132,7 @@ void TWI_vStartTransmission(void)
     TWCR = (1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
 }
 
-bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size)
+bool TWI_bSendData(u8 u8Address, u8 *pData)
 {
     if (TWI_boolIsBusy)
         return false;
@@ -141,7 +141,7 @@ bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size)
     TWI_u8SlaveAddress = u8Address;
     TWI_boolDirection = TWI_WRITE; /* WRITE MODE */
     TWI_pDataBuffer = pData;
-    TWI_u8DataSize = u8Size;
+    TWI_u8DataSize = sizeof(pData);
     TWI_u8DataCounter = 0;
     TWI_boolIsBusy = true;
 
@@ -150,7 +150,7 @@ bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size)
     return true;
 }
 
-bool TWI_bReadData(u8 u8Address, u8 *pData, u8 u8Size)
+bool TWI_bReadData(u8 u8Address, u8 *pData)
 {
     if (TWI_boolIsBusy)
         return false;
@@ -159,7 +159,7 @@ bool TWI_bReadData(u8 u8Address, u8 *pData, u8 u8Size)
     TWI_u8SlaveAddress = u8Address;
     TWI_boolDirection = TWI_READ; /* READ MODE */
     TWI_pDataBuffer = pData;
-    TWI_u8DataSize = u8Size;
+    TWI_u8DataSize = sizeof(pData);
     TWI_u8DataCounter = 0;
     TWI_boolIsBusy = true;
 
