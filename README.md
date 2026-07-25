@@ -222,8 +222,9 @@ The scanner sends its output through UART at 9600 baud:
 
 The address is printed in decimal by `LOGGER_voidPrintNumber()`. For example, decimal `60` is hexadecimal `0x3C`. The exact output depends on which devices are connected to the bus.
 
-Here's a video of it working in real life! (Sorry the video is in Arabic cause I was recording it for an Arabic audience)
-<video src="https://github.com/yousseftechdev/ATMega32-TWI-driver/raw/refs/heads/main/Screenshots/BusScannerShowcase.mp4" width="100%" controls autoplay loop></video>
+Here's a video of it working in real life! (I muted the video cause it was in Arabic)
+<video src="https://github.com/user-attachments/assets/1512b62e-2e80-49e0-8581-e0ca6aece3a9" width="100%" controls autoplay loop></video>
+In the video I have 4 I<sup>2</sup>C devices conntected on the same bus, the ATMega32 providing clock to the bus, and a Raspberry Pi Pico working as a UART bridge, sending the terminal output from the ATMega to my laptop, the terminal shows 5 addresses as the Servo Motor Driver I pointed to has 2 addresses it replies to.
 
 ## Building and flashing
 
