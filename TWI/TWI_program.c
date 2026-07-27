@@ -14,7 +14,7 @@
 /* Private State Variables for the ISR */
 static volatile bool TWI_bTransactionSuccess = false;              /* true = tranaction successful, false = failed */
 static volatile bool TWI_bInterruptEnable = TWI_DISABLE_INTERRUPT; /* true = Enable Interrupts, false = Disable Interrups */
-static volatile bool TWI_bAutoStop = true;                         /* true = Enable automatically ending the transmission after byte is sent, false = don't end transmission after byte is sent */
+static volatile bool TWI_bAutoStop = TWI_AUTO_STOP;                         /* true = Enable automatically ending the transmission after byte is sent, false = don't end transmission after byte is sent */
 static volatile u8 *TWI_pDataBuffer;                               /* Pointer to the user's data array */
 static volatile u8 TWI_u8DataSize;                                 /* Total bytes to send/receive */
 static volatile u8 TWI_u8DataCounter;                              /* Current byte index */
