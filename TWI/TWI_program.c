@@ -156,6 +156,10 @@ bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size)
     return true;
 }
 
+bool TWI_bSendDataShot(u8 u8Address, u8 u8Data) {
+    return TWI_bSendData(u8Address, (u8[]){u8Data}, 1);
+}
+
 bool TWI_bReadData(u8 u8Address, u8 *pData, u8 u8Size)
 {
     if (TWI_boolIsBusy)

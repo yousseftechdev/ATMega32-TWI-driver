@@ -1,2 +1,2 @@
 # Chnages:
-- Added the ability to disable auto-stop for a better manual experience
+- Added the ability to send one raw byte without passing array address

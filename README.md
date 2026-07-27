@@ -40,6 +40,7 @@ Why did I even make this? Well I've been recently moving from dev boards to bare
 - Interrupt-based transaction handling.
 - Optional manual transaction handling through `TWI_vIntHandler()`.
 - Optional manual control of auto-stop with `TWI_vSetAutoStop()` for advanced/manual transaction sequences.
+- A convenience helper, `TWI_bSendDataShot()`, for sending a single byte without creating an array.
 - Seven-bit slave addressing. The driver adds the read/write bit to the address.
 - Busy-state protection so a new transaction cannot overwrite an active one.
 - Basic transaction success/failure reporting.
@@ -271,6 +272,7 @@ There's already a prebuilt .hex file in /build so you can test out the bus scann
 - `TWI_vInit()` enables the TWI peripheral and configures the current bit-rate settings.
 - `TWI_vSetAutoStop()` enables or disables the automatic STOP condition at the end of a transaction.
 - `TWI_bSendData()` starts a master write transaction.
+- `TWI_bSendDataShot()` sends a single byte without requiring a buffer array.
 - `TWI_bReadData()` starts a master read transaction.
 - `TWI_bIsBusy()` reports whether a transaction is still active.
 - `TWI_boolGetTransactionStatus()` reports the success flag for the latest transaction.

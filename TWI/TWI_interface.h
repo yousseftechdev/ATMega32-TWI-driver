@@ -138,6 +138,14 @@ u8 TWI_u8ReadDataByte(void);
 bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size);
 
 /**
+ * @brief           Wrapper for TWI_bSendData, is able to send one byte without the need to pass it as an array or define the size.
+ * @param u8Address Target slave address
+ * @param u8Data    Byte to be sent
+ * @return true if busy, false if idle
+ */
+bool TWI_bSendDataShot(u8 u8Address, u8 u8Data);
+
+/**
  * @brief           Actually kicks off the transmission and sets all the necessary flags at the beginning and puts the slave in read mode.
  * @param u8Address Target slave address
  * @param pData     Array pointer for the bytes to be transmitted
