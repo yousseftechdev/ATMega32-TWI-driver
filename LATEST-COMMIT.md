@@ -1,2 +1,2 @@
 # Chnages:
-- ACTUALLY added AI Usage Declaration to README
+- Added the ability to disable auto-stop for a better manual experience

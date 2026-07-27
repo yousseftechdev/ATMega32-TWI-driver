@@ -39,6 +39,7 @@ Why did I even make this? Well I've been recently moving from dev boards to bare
 - Master-mode TWI read transactions.
 - Interrupt-based transaction handling.
 - Optional manual transaction handling through `TWI_vIntHandler()`.
+- Optional manual control of auto-stop with `TWI_vSetAutoStop()` for advanced/manual transaction sequences.
 - Seven-bit slave addressing. The driver adds the read/write bit to the address.
 - Busy-state protection so a new transaction cannot overwrite an active one.
 - Basic transaction success/failure reporting.
@@ -207,6 +208,27 @@ if (TWI_bSendData(address, dataArray, dataSize))
 
 In this mode, the application is responsible for checking `TWINT` and calling `TWI_vIntHandler()` for every completed TWI event. Calling the handler once is not enough to complete a multi-byte transaction.
 
+Auto-stop is enabled by default, which means the driver will send a STOP condition automatically once a transaction finishes. If you want to control the stop condition yourself, disable it before starting the transaction:
+
+```c
+TWI_vSetAutoStop(TWI_MANUAL_STOP);
+
+if (TWI_bSendData(address, dataArray, dataSize))
+{
+    while (TWI_bIsBusy())
+    {
+        if (TWCR & (1 << TWINT))
+        {
+            TWI_vIntHandler();
+        }
+    }
+
+    TWI_vEndTransmission();
+}
+```
+
+This is useful for manual transaction sequences where you want to keep the bus active for additional operations before sending a STOP.
+
 ## Example application: I2C bus scanner
 
 The included [main.c](main.c) initializes the UART and TWI drivers, enables global interrupts, and checks the common seven-bit address range from `0x08` through `0x77`. For each address it starts a zero-byte write transaction. A device is reported as found when it acknowledges its address.
@@ -247,6 +269,7 @@ There's already a prebuilt .hex file in /build so you can test out the bus scann
 ## API overview
 
 - `TWI_vInit()` enables the TWI peripheral and configures the current bit-rate settings.
+- `TWI_vSetAutoStop()` enables or disables the automatic STOP condition at the end of a transaction.
 - `TWI_bSendData()` starts a master write transaction.
 - `TWI_bReadData()` starts a master read transaction.
 - `TWI_bIsBusy()` reports whether a transaction is still active.

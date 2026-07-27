@@ -12,14 +12,15 @@
 #include "TWI_interface.h"
 
 /* Private State Variables for the ISR */
-static volatile bool TWI_boolTransactionSuccess = false; /* true = tranaction successful, false = failed */
-static volatile bool TWI_boolInterruptEnable = false;    /* true = Enable Interrupts, false = Disable Interrups */
-static volatile u8 *TWI_pDataBuffer;                     /* Pointer to the user's data array */
-static volatile u8 TWI_u8DataSize;                       /* Total bytes to send/receive */
-static volatile u8 TWI_u8DataCounter;                    /* Current byte index */
-static volatile u8 TWI_u8SlaveAddress;                   /* Target slave address */
-static volatile bool TWI_boolDirection;                  /* true = Read, false = Write */
-static volatile bool TWI_boolIsBusy;                     /* Flag to prevent overlapping transactions */
+static volatile bool TWI_bTransactionSuccess = false;              /* true = tranaction successful, false = failed */
+static volatile bool TWI_bInterruptEnable = TWI_DISABLE_INTERRUPT; /* true = Enable Interrupts, false = Disable Interrups */
+static volatile bool TWI_bAutoStop = true;                         /* true = Enable automatically ending the transmission after byte is sent, false = don't end transmission after byte is sent */
+static volatile u8 *TWI_pDataBuffer;                               /* Pointer to the user's data array */
+static volatile u8 TWI_u8DataSize;                                 /* Total bytes to send/receive */
+static volatile u8 TWI_u8DataCounter;                              /* Current byte index */
+static volatile u8 TWI_u8SlaveAddress;                             /* Target slave address */
+static volatile bool TWI_boolDirection;                            /* true = Read, false = Write */
+static volatile bool TWI_boolIsBusy;                               /* Flag to prevent overlapping transactions */
 
 /* Set interrupt handler */
 ISR(TWI_vect)
@@ -43,6 +44,11 @@ void TWI_vInit(u32 u32Freq, bool boolInterruptEnable)
     {
         TWI_vEnableInterrupt();
     }
+}
+
+void TWI_vSetAutoStop(bool bAutoStop)
+{
+    TWI_bAutoStop = bAutoStop;
 }
 
 void TWI_vSetFrequency(u32 u32Freq)
@@ -106,7 +112,7 @@ void TWI_vAcknowledgeOwnAddress(bool boolAcknowledgeEnable)
 void TWI_vEnableInterrupt(void)
 {
     /* Set TWIE bit to enable TWI interrupts */
-    TWI_boolInterruptEnable = true;
+    TWI_bInterruptEnable = true;
     TWCR |= (1 << TWIE);
 }
 
@@ -129,7 +135,7 @@ void TWI_vWritePrescaler(u8 u8Prescaler)
 
 void TWI_vStartTransmission(void)
 {
-    TWCR = (1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
+    TWCR = (1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (TWI_bInterruptEnable ? (1 << TWIE) : 0);
 }
 
 bool TWI_bSendData(u8 u8Address, u8 *pData, u8 u8Size)
@@ -170,19 +176,19 @@ bool TWI_bReadData(u8 u8Address, u8 *pData, u8 u8Size)
 
 void TWI_vEndTransmission(void)
 {
-    TWCR = (1 << TWSTO) | (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
+    TWCR = (1 << TWSTO) | (1 << TWINT) | (1 << TWEN) | (TWI_bInterruptEnable ? (1 << TWIE) : 0);
 }
 
 void TWI_vSendSlaveCall(u8 u8Address, bool boolDirectionBit)
 {
     TWDR = (u8Address << 1) | boolDirectionBit;
-    TWCR = (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
+    TWCR = (1 << TWINT) | (1 << TWEN) | (TWI_bInterruptEnable ? (1 << TWIE) : 0);
 }
 
 void TWI_vSendDataByte(u8 u8DataByte)
 {
     TWDR = u8DataByte;
-    TWCR = (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
+    TWCR = (1 << TWINT) | (1 << TWEN) | (TWI_bInterruptEnable ? (1 << TWIE) : 0);
 }
 
 u8 TWI_u8ReadDataByte(void)
@@ -197,7 +203,7 @@ bool TWI_bIsBusy(void)
 
 bool TWI_boolGetTransactionStatus(void)
 {
-    return TWI_boolTransactionSuccess;
+    return TWI_bTransactionSuccess;
 }
 
 void TWI_vIntHandler(void)
@@ -215,7 +221,7 @@ void TWI_vIntHandler(void)
 
     case 0x18: /* SLA+W TRANSMITTED, ACK RECEIVED */
     case 0x28: /* DATA BYTE TRANSMITTED, ACK RECEIVED */
-        TWI_boolTransactionSuccess = true;
+        TWI_bTransactionSuccess = true;
         if (TWI_u8DataCounter < TWI_u8DataSize)
         {
             TWI_vSendDataByte(TWI_pDataBuffer[TWI_u8DataCounter]);
@@ -223,8 +229,11 @@ void TWI_vIntHandler(void)
         }
         else
         {
-            TWI_vEndTransmission();
-            TWI_boolIsBusy = false;
+            if (TWI_bAutoStop)
+            {
+                TWI_vEndTransmission();
+                TWI_boolIsBusy = false;
+            }
         }
         break;
 
@@ -232,7 +241,7 @@ void TWI_vIntHandler(void)
     /*             MASTER RECEIVER STATES                 */
     /* ************************************************** */
     case 0x40: /* SLA+R TRANSMITTED, ACK RECEIVED */
-        TWI_boolTransactionSuccess = true;
+        TWI_bTransactionSuccess = true;
         if (TWI_u8DataSize == 1)
         {
             TWI_vAcknowledgeOwnAddress(TWI_ACKNOWLEDGE_DISABLE);
@@ -241,18 +250,21 @@ void TWI_vIntHandler(void)
         {
             TWI_vAcknowledgeOwnAddress(TWI_ACKNOWLEDGE_ENABLE);
         }
-        TWCR = (TWI_boolInterruptEnable ? (1 << TWIE) : 0) | (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
+        TWCR = (TWI_bInterruptEnable ? (1 << TWIE) : 0) | (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
         break;
 
     case 0x50: /* DATA BYTE RECEIVED, ACK RETURNED */
-        TWI_boolTransactionSuccess = true;
+        TWI_bTransactionSuccess = true;
         TWI_pDataBuffer[TWI_u8DataCounter] = TWI_u8ReadDataByte();
         TWI_u8DataCounter++;
 
         if (TWI_u8DataCounter == TWI_u8DataSize)
         {
-            TWI_vEndTransmission();
-            TWI_boolIsBusy = false;
+            if (TWI_bAutoStop)
+            {
+                TWI_vEndTransmission();
+                TWI_boolIsBusy = false;
+            }
         }
         else
         {
@@ -260,7 +272,7 @@ void TWI_vIntHandler(void)
             {
                 TWI_vAcknowledgeOwnAddress(TWI_ACKNOWLEDGE_DISABLE);
             }
-            TWCR = (TWI_boolInterruptEnable ? (1 << TWIE) : 0) | (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
+            TWCR = (TWI_bInterruptEnable ? (1 << TWIE) : 0) | (1 << TWINT) | (1 << TWEN) | (TWCR & (1 << TWEA));
         }
         break;
 
@@ -272,14 +284,14 @@ void TWI_vIntHandler(void)
     case 0x20: // SLA+W transmitted, NACK received
     case 0x30: // Data byte transmitted, NACK received
         // An error occurred. Abort and send STOP condition.
-        TWI_boolTransactionSuccess = false;
+        TWI_bTransactionSuccess = false;
         TWI_vEndTransmission();
         TWI_boolIsBusy = false;
         break;
 
     default:
         // Unknown state. Just clear the flag to prevent hanging.
-        TWCR = (1 << TWINT) | (1 << TWEN) | (TWI_boolInterruptEnable ? (1 << TWIE) : 0);
+        TWCR = (1 << TWINT) | (1 << TWEN) | (TWI_bInterruptEnable ? (1 << TWIE) : 0);
         break;
     }
 }
